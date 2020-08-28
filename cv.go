@@ -10,8 +10,9 @@ import (
 
 // CV ...
 type CV struct {
-	Width, Height int
-	Angle         float64
+	Width, Height int     // default: 114
+	Angle         float64 // default: 5
+	OutPerLine    int     // default: 10
 }
 
 func (o *CV) check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
@@ -46,14 +47,35 @@ func (o *CV) check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
 		gocv.Hconcat(out, ro, &out)
 	}
 
-	// fmt.Println("[good] rate:", okRate, "percent:", okPercent)
-	return okRate, float64(okPercent), out.Clone()
+	fix := (out.Cols() / out.Rows()) % (o.OutPerLine * 2)
+	if fix != 0 {
+		append := (o.OutPerLine * 2) - fix
+		emp := gocv.NewMatWithSize(tpl.Rows(), tpl.Cols(), tpl.Type())
+		gocv.FillPoly(&emp, [][]image.Point{{{0, 0}, {0, tpl.Cols()}, {tpl.Rows(), tpl.Cols()}, {tpl.Rows(), 0}}}, color.RGBA{255, 255, 255, 1})
+		defer emp.Close()
+		for i := 0; i < append; i++ {
+			gocv.Hconcat(out, emp, &out)
+		}
+	}
+
+	tmp := gocv.NewMatWithSize(0, out.Rows()*o.OutPerLine, out.Type())
+	defer tmp.Close()
+
+	line := out.Cols() / (out.Rows() * o.OutPerLine)
+	for i := 0; i < line; i += 2 {
+		a := out.Region(image.Rect(out.Rows()*o.OutPerLine*(i+0), 0, out.Rows()*o.OutPerLine*(i+1), out.Rows()))
+		b := out.Region(image.Rect(out.Rows()*o.OutPerLine*(i+1), 0, out.Rows()*o.OutPerLine*(i+2), out.Rows()))
+		gocv.Vconcat(tmp, a, &tmp)
+		gocv.Vconcat(tmp, b, &tmp)
+	}
+
+	return okRate, float64(okPercent), tmp.Clone()
 }
 
 func (o *CV) analyseAnimal(filename string) gocv.Mat {
 	img := gocv.IMRead(filename, gocv.IMReadColor)
 	defer img.Close()
-	animal := o.findAnimal(img, o.Width, o.Height)
+	animal := o.findAnimal(img)
 	defer animal.Close()
 
 	compress := gocv.NewMatWithSize(o.Width, o.Height, gocv.MatTypeCV8U)
@@ -72,7 +94,7 @@ func (o *CV) rotationImg(src gocv.Mat, angle float64) gocv.Mat {
 	return out
 }
 
-func (o *CV) findAnimal(img gocv.Mat, w, h int) gocv.Mat {
+func (o *CV) findAnimal(img gocv.Mat) gocv.Mat {
 
 	imgClone := img.Clone()
 	defer imgClone.Close()
@@ -123,13 +145,20 @@ func (o *CV) findAnimal(img gocv.Mat, w, h int) gocv.Mat {
 	return img
 }
 
-func (o *CV) show(img gocv.Mat) {
-	win := gocv.NewWindow("preview")
-	defer win.Close()
+func (o *CV) show(img ...gocv.Mat) {
+	var ws []*gocv.Window
+	for k, v := range img {
+		win := gocv.NewWindow(fmt.Sprintf("preview:%d", k))
+		defer win.Close()
+		win.IMShow(v)
+		ws = append(ws, win)
+	}
 	for {
-		win.IMShow(img)
-		if win.WaitKey(0) > 0 {
-			return
+		for _, v := range ws {
+			if v.WaitKey(0) > 0 {
+				return
+			}
+			break
 		}
 	}
 }

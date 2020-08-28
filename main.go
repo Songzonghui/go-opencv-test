@@ -21,7 +21,7 @@ func main() {
 		"data/12/1.png": {"data/12/2.png", "data/12/3.png", "data/12/4.png", "data/12/5.png", "data/12/6.png", "data/12/7.png"},
 	}
 
-	cv := &CV{Width: 114, Height: 114, Angle: 5}
+	cv := &CV{Width: 114, Height: 114, Angle: 5, OutPerLine: 10}
 	for sk, sv := range settings {
 		// 基准图
 		tpl := cv.analyseAnimal(sk)
