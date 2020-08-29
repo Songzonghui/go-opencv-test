@@ -10,12 +10,14 @@ import (
 
 // CV ...
 type CV struct {
-	Width, Height int     // default: 114
-	Angle         float64 // default: 5
-	OutPerLine    int     // default: 10
+	Width, Height int     // 生成最终比较图片的尺寸 default: 114
+	Angle         float64 // 比较时每次旋转角度 default: 5
+	OutPerLine    int     // 调试结果每行输出图片数量 default: 10
 }
 
-func (o *CV) check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
+// Check 旋转检查两张图片相似度最高的角度和比例
+// 返回：角度、相似度、调试结果
+func (o *CV) Check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
 	out := gocv.NewMat()
 	defer out.Close()
 
@@ -27,7 +29,7 @@ func (o *CV) check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
 	defer okMat.Close()
 
 	for r := -180.0; r < 180; r += o.Angle {
-		ro := o.rotationImg(chk, r)
+		ro := o.RotationImg(chk, r)
 		defer ro.Close()
 		matResult := gocv.NewMat()
 		mask := gocv.NewMat()
@@ -72,10 +74,11 @@ func (o *CV) check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
 	return okRate, float64(okPercent), tmp.Clone()
 }
 
-func (o *CV) analyseAnimal(filename string) gocv.Mat {
+// AnalyseAnimal 分析出主体内容
+func (o *CV) AnalyseAnimal(filename string) gocv.Mat {
 	img := gocv.IMRead(filename, gocv.IMReadColor)
 	defer img.Close()
-	animal := o.findAnimal(img)
+	animal := o.FindAnimal(img)
 	defer animal.Close()
 
 	compress := gocv.NewMatWithSize(o.Width, o.Height, gocv.MatTypeCV8U)
@@ -86,7 +89,8 @@ func (o *CV) analyseAnimal(filename string) gocv.Mat {
 	return compress
 }
 
-func (o *CV) rotationImg(src gocv.Mat, angle float64) gocv.Mat {
+// RotationImg 旋转图片
+func (o *CV) RotationImg(src gocv.Mat, angle float64) gocv.Mat {
 	out := gocv.NewMat()
 	center := image.Point{src.Rows() / 2, src.Cols() / 2}
 	M := gocv.GetRotationMatrix2D(center, angle, 1.0)
@@ -94,7 +98,8 @@ func (o *CV) rotationImg(src gocv.Mat, angle float64) gocv.Mat {
 	return out
 }
 
-func (o *CV) findAnimal(img gocv.Mat) gocv.Mat {
+// FindAnimal 查找主体内容
+func (o *CV) FindAnimal(img gocv.Mat) gocv.Mat {
 
 	imgClone := img.Clone()
 	defer imgClone.Close()
@@ -145,7 +150,8 @@ func (o *CV) findAnimal(img gocv.Mat) gocv.Mat {
 	return img
 }
 
-func (o *CV) show(img ...gocv.Mat) {
+// Show GUI显示
+func (o *CV) Show(img ...gocv.Mat) {
 	var ws []*gocv.Window
 	for k, v := range img {
 		win := gocv.NewWindow(fmt.Sprintf("preview:%d", k))
