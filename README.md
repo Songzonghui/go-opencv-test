@@ -4,11 +4,11 @@
 - 项目制作: `docker build -f Dockerfile -t ohko/opencv_test .`
 - 项目测试: `docker run --rm -it ohko/opencv_test`
 
-# 指令
-- AnalyseAnimal: 分析主体图像
-- Check: 360旋转对比图像，返回最优对比结果
-- Check1: 返回图像相似度，不同角度相似度不同
-- Check2: 返回图像相似度，与角度无关
+# 方法
+- AnalyseAnimal(): 分析主体图像
+- Check(): 360旋转对比图像，返回最优对比结果
+- Check1(): 返回图像相似度，不同角度相似度不同
+- Check2(): 返回图像相似度，与角度无关
 
 ![debug1.png](debug1.png)
 ![debug2.png](debug2.png)

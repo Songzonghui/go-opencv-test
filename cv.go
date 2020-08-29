@@ -32,9 +32,9 @@ func (o *CV) Check(tpl, chk gocv.Mat, angle float64, perLine int) (float64, floa
 		ro := o.RotationImg(chk, r)
 		defer ro.Close()
 		minConfidence, ro := o.Check1(tpl, ro)
-		gocv.PutText(&ro, fmt.Sprintf("%.0f", r), image.Point{0, ro.Cols()}, gocv.FontHersheyPlain, 1, color.RGBA{R: 255, G: 0, B: 0, A: 0}, 1)
-		gocv.PutText(&ro, fmt.Sprintf("%.2f", minConfidence), image.Point{0, ro.Cols() / 3}, gocv.FontHersheyPlain, 1, color.RGBA{R: 255, G: 0, B: 0, A: 0}, 1)
-		// gocv.PutText(&ro, fmt.Sprintf("%.2f", maxConfidence), image.Point{0, ro.Cols() / 2}, gocv.FontHersheyPlain, 0.75, color.RGBA{R: 255, G: 0, B: 0, A: 0}, 1)
+		gocv.PutText(&ro, fmt.Sprintf("%.0f", r), image.Point{0, ro.Cols()}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
+		gocv.PutText(&ro, fmt.Sprintf("%.2f", minConfidence), image.Point{0, ro.Cols() / 3}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
+		// gocv.PutText(&ro, fmt.Sprintf("%.2f", maxConfidence), image.Point{0, ro.Cols() / 2}, gocv.FontHersheyPlain, 0.75, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
 		if minConfidence > okPercent {
 			okPercent = minConfidence
 			okRate = r
