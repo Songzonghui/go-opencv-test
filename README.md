@@ -5,3 +5,5 @@
 - 项目制作: `docker build -f Dockerfile -t ohko/opencv_test .`
 
 - 项目测试: `docker run --rm -it ohko/opencv_test`
+
+![debug.png](debug.png)

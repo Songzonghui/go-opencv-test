@@ -71,6 +71,8 @@ func (o *CV) Check(tpl, chk gocv.Mat) (float64, float64, gocv.Mat) {
 		gocv.Vconcat(tmp, b, &tmp)
 	}
 
+	gocv.PutText(&tmp, fmt.Sprintf("%.0f", okRate), image.Point{0, tpl.Rows()}, gocv.FontHersheyPlain, 1, color.RGBA{R: 255, G: 0, B: 0, A: 0}, 1)
+	gocv.PutText(&tmp, fmt.Sprintf("%.2f", okPercent), image.Point{0, tpl.Rows() / 3}, gocv.FontHersheyPlain, 1, color.RGBA{R: 255, G: 0, B: 0, A: 0}, 1)
 	return okRate, float64(okPercent), tmp.Clone()
 }
 

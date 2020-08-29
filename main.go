@@ -48,7 +48,7 @@ func main() {
 				// 分值过低的结果
 				if percent < 0.5 {
 					// 输出到文件查看
-					gocv.IMWrite("test_out.png", out)
+					gocv.IMWrite("debug.png", out)
 					// GUI显示
 					cv.Show(out)
 					return
