@@ -92,9 +92,13 @@ func (o *CV) Check2(tpl, chk gocv.Mat) (float64, gocv.Mat) {
 	orb := gocv.NewORB()
 	kp1, des1 := orb.DetectAndCompute(tpl, gocv.NewMat())
 	kp2, des2 := orb.DetectAndCompute(chk, gocv.NewMat())
-	gocv.DrawKeyPoints(tpl, kp1, &tpl, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
-	gocv.DrawKeyPoints(chk, kp2, &chk, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
-	bf := gocv.NewBFMatcherWithParams(gocv.NormHamming2, false)
+	if len(kp1) > 0 {
+		gocv.DrawKeyPoints(tpl, kp1, &tpl, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
+	}
+	if len(kp2) > 0 {
+		gocv.DrawKeyPoints(chk, kp2, &chk, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
+	}
+	bf := gocv.NewBFMatcherWithParams(gocv.NormHamming, false)
 	matches := bf.KnnMatch(des1, des2, 2)
 	var good1, good2 []gocv.KeyPoint
 	for _, v := range matches {
