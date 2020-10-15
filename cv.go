@@ -25,22 +25,21 @@ func (o *CV) Check(tpl, chk gocv.Mat, angle float64, perLine int) (float64, floa
 
 	okRate := float64(0)
 	okPercent := float64(0)
-	var okMat gocv.Mat
-	defer okMat.Close()
 
 	for r := -180.0; r < 180; r += angle {
-		ro := o.RotationImg(chk, r)
-		defer ro.Close()
-		minConfidence, ro := o.Check1(tpl, ro)
-		gocv.PutText(&ro, fmt.Sprintf("%.0f", r), image.Point{0, ro.Cols()}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
-		gocv.PutText(&ro, fmt.Sprintf("%.2f", minConfidence), image.Point{0, ro.Cols() / 3}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
-		// gocv.PutText(&ro, fmt.Sprintf("%.2f", maxConfidence), image.Point{0, ro.Cols() / 2}, gocv.FontHersheyPlain, 0.75, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
-		if minConfidence > okPercent {
-			okPercent = minConfidence
-			okRate = r
-			okMat = ro.Clone()
-		}
-		gocv.Hconcat(out, ro, &out)
+		func() {
+			ro := o.RotationImg(chk, r)
+			defer ro.Close()
+			minConfidence, ro := o.Check1(tpl, ro)
+			gocv.PutText(&ro, fmt.Sprintf("%.0f", r), image.Point{0, ro.Cols()}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
+			gocv.PutText(&ro, fmt.Sprintf("%.2f", minConfidence), image.Point{0, ro.Cols() / 3}, gocv.FontHersheyPlain, 1, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
+			// gocv.PutText(&ro, fmt.Sprintf("%.2f", maxConfidence), image.Point{0, ro.Cols() / 2}, gocv.FontHersheyPlain, 0.75, color.RGBA{R: 0, G: 0, B: 255, A: 0}, 1)
+			if minConfidence > okPercent {
+				okPercent = minConfidence
+				okRate = r
+			}
+			gocv.Hconcat(out, ro, &out)
+		}()
 	}
 
 	fix := (out.Cols() / out.Rows()) % (perLine * 2)
@@ -61,6 +60,8 @@ func (o *CV) Check(tpl, chk gocv.Mat, angle float64, perLine int) (float64, floa
 	for i := 0; i < line; i += 2 {
 		a := out.Region(image.Rect(out.Rows()*perLine*(i+0), 0, out.Rows()*perLine*(i+1), out.Rows()))
 		b := out.Region(image.Rect(out.Rows()*perLine*(i+1), 0, out.Rows()*perLine*(i+2), out.Rows()))
+		defer a.Close()
+		defer b.Close()
 		gocv.Vconcat(tmp, a, &tmp)
 		gocv.Vconcat(tmp, b, &tmp)
 	}
@@ -74,6 +75,7 @@ func (o *CV) Check(tpl, chk gocv.Mat, angle float64, perLine int) (float64, floa
 // 返回：相似度、调试结果
 func (o *CV) Check1(tpl, chk gocv.Mat) (float64, gocv.Mat) {
 	matResult := gocv.NewMat()
+	defer matResult.Close()
 	mask := gocv.NewMat()
 	gocv.MatchTemplate(chk, tpl, &matResult, gocv.TmCcoeffNormed, mask)
 	mask.Close()
@@ -90,8 +92,14 @@ func (o *CV) Check2(tpl, chk gocv.Mat) (float64, gocv.Mat) {
 	defer out.Close()
 
 	orb := gocv.NewORB()
-	kp1, des1 := orb.DetectAndCompute(tpl, gocv.NewMat())
-	kp2, des2 := orb.DetectAndCompute(chk, gocv.NewMat())
+	defer orb.Close()
+	a, b := gocv.NewMat(), gocv.NewMat()
+	defer a.Close()
+	defer b.Close()
+	kp1, des1 := orb.DetectAndCompute(tpl, a)
+	kp2, des2 := orb.DetectAndCompute(chk, b)
+	defer des1.Close()
+	defer des2.Close()
 	if len(kp1) > 0 {
 		gocv.DrawKeyPoints(tpl, kp1, &tpl, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
 	}
@@ -99,6 +107,7 @@ func (o *CV) Check2(tpl, chk gocv.Mat) (float64, gocv.Mat) {
 		gocv.DrawKeyPoints(chk, kp2, &chk, color.RGBA{0, 0, 255, 1}, gocv.DrawRichKeyPoints)
 	}
 	bf := gocv.NewBFMatcherWithParams(gocv.NormHamming, false)
+	defer bf.Close()
 	matches := bf.KnnMatch(des1, des2, 2)
 	var good1, good2 []gocv.KeyPoint
 	for _, v := range matches {
@@ -138,7 +147,9 @@ func (o *CV) AnalyseAnimal(filename string, optimize bool) gocv.Mat {
 
 	if optimize {
 		gocv.GaussianBlur(compress, &compress, image.Pt(3, 3), 0, 0, gocv.BorderWrap)
-		gocv.Dilate(compress, &compress, gocv.NewMat())
+		x := gocv.NewMat()
+		defer x.Close()
+		gocv.Dilate(compress, &compress, x)
 	}
 	return compress
 }
@@ -148,6 +159,7 @@ func (o *CV) RotationImg(src gocv.Mat, angle float64) gocv.Mat {
 	out := gocv.NewMat()
 	center := image.Point{src.Rows() / 2, src.Cols() / 2}
 	M := gocv.GetRotationMatrix2D(center, angle, 1.0)
+	defer M.Close()
 	gocv.WarpAffineWithParams(src, &out, M, image.Point{src.Rows(), src.Cols()}, gocv.InterpolationLinear, gocv.BorderConstant, color.RGBA{255, 255, 255, 0})
 	return out
 }

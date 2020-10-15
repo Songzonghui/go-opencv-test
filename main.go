@@ -32,36 +32,44 @@ func main() {
 func check1() {
 	cv := &CV{Width: 114, Height: 114}
 	for _, k := range base {
-		// 基准图
-		tpl := cv.AnalyseAnimal(k, true)
+		func() {
+			// 基准图
+			tpl := cv.AnalyseAnimal(k, true)
+			defer tpl.Close()
 
-		for _, vs := range tests {
-			for _, v := range vs {
-				// 测试图
-				test := cv.AnalyseAnimal(v, true)
+			for _, vs := range tests {
+				for _, v := range vs {
+					func() {
+						// 测试图
+						test := cv.AnalyseAnimal(v, true)
+						defer test.Close()
 
-				rate, percent, out := cv.Check(tpl.Clone(), test, 5, 10)
-				defer out.Close()
+						x := tpl.Clone()
+						defer x.Close()
+						rate, percent, out := cv.Check(x, test, 5, 10)
+						defer out.Close()
 
-				sign := "√"
-				if filepath.Dir(k) == filepath.Dir(v) && percent < 0.9 {
-					sign = "<== x"
-				} else if percent < 0.9 {
-					sign = "x"
-				}
-				fmt.Printf("[% 15s - % 15s] Percent:%0.3f Rate:% 4.0f %s\n", k, v, percent, rate, sign)
+						sign := "√"
+						if filepath.Dir(k) == filepath.Dir(v) && percent < 0.9 {
+							sign = "<== x"
+						} else if percent < 0.9 {
+							sign = "x"
+						}
+						fmt.Printf("[% 15s - % 15s] Percent:%0.3f Rate:% 4.0f %s\n", k, v, percent, rate, sign)
 
-				// 分值过低的结果
-				if percent < 0.5 {
-					// 输出到文件查看
-					gocv.IMWrite("debug1.png", out)
-					// GUI显示
-					cv.Show(out)
-					return
+						// 分值过低的结果
+						if percent < 0.5 {
+							// 输出到文件查看
+							gocv.IMWrite("debug1.png", out)
+							// GUI显示
+							cv.Show(out)
+							return
+						}
+					}()
 				}
 			}
-		}
-		fmt.Println()
+			fmt.Println()
+		}()
 	}
 }
 
@@ -69,35 +77,43 @@ func check1() {
 func check2() {
 	cv2 := &CV{Width: 114, Height: 114}
 	for _, k := range base {
-		// 基准图
-		tpl := cv2.AnalyseAnimal(k, false)
+		func() {
+			// 基准图
+			tpl := cv2.AnalyseAnimal(k, false)
+			defer tpl.Close()
 
-		for _, vs := range tests {
-			for _, v := range vs {
-				// 测试图
-				test := cv2.AnalyseAnimal(v, false)
+			for _, vs := range tests {
+				for _, v := range vs {
+					func() {
+						// 测试图
+						test := cv2.AnalyseAnimal(v, false)
+						defer test.Close()
 
-				percent, out := cv2.Check2(tpl.Clone(), test)
-				defer out.Close()
+						x := tpl.Clone()
+						defer x.Close()
+						percent, out := cv2.Check2(x, test)
+						defer out.Close()
 
-				sign := "√"
-				if filepath.Dir(k) == filepath.Dir(v) && percent < 0.1 {
-					sign = "<== x"
-				} else if percent < 0.1 {
-					sign = "x"
-				}
-				fmt.Printf("[% 15s - % 15s] Percent:%0.3f %s\n", k, v, percent, sign)
+						sign := "√"
+						if filepath.Dir(k) == filepath.Dir(v) && percent < 0.1 {
+							sign = "<== x"
+						} else if percent < 0.1 {
+							sign = "x"
+						}
+						fmt.Printf("[% 15s - % 15s] Percent:%0.3f %s\n", k, v, percent, sign)
 
-				// 分值过低的结果
-				if false {
-					// 输出到文件查看
-					gocv.IMWrite("debug2.png", out)
-					// GUI显示
-					cv2.Show(out)
-					return
+						// 分值过低的结果
+						if false {
+							// 输出到文件查看
+							gocv.IMWrite("debug2.png", out)
+							// GUI显示
+							cv2.Show(out)
+							return
+						}
+					}()
 				}
 			}
-		}
-		fmt.Println()
+			fmt.Println()
+		}()
 	}
 }
