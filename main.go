@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"gocv.io/x/gocv"
 )
@@ -22,10 +23,15 @@ var tests = [][]string{
 	{"data/5/1.png", "data/5/2.png", "data/5/3.png", "data/5/4.png", "data/5/5.png", "data/5/6.png"},
 	{"data/12/2.png", "data/12/3.png", "data/12/4.png", "data/12/5.png", "data/12/6.png", "data/12/7.png"},
 }
+var base3 = []string{"data/test/1.jpg", "data/test/2.jpg", "data/test/3.jpg", "data/test/4.jpg", "data/test/5.jpg", "data/test/6.jpg", "data/test/7.jpg"}
+var tests3 = [][]string{
+	{"data/test/7_1.jpg"},
+}
 
 func main() {
 	check1()
 	check2()
+	check3()
 }
 
 // 旋转角度相似度
@@ -96,6 +102,51 @@ func check2() {
 
 						sign := "√"
 						if filepath.Dir(k) == filepath.Dir(v) && percent < 0.1 {
+							sign = "<== x"
+						} else if percent < 0.1 {
+							sign = "x"
+						}
+						fmt.Printf("[% 15s - % 15s] Percent:%0.3f %s\n", k, v, percent, sign)
+
+						// 分值过低的结果
+						if false {
+							// 输出到文件查看
+							gocv.IMWrite("debug2.png", out)
+							// GUI显示
+							cv2.Show(out)
+							return
+						}
+					}()
+				}
+			}
+			fmt.Println()
+		}()
+	}
+}
+
+// 相似图测试
+func check3() {
+	cv2 := &CV{Width: 114, Height: 114}
+	for _, k := range base3 {
+		func() {
+			// 基准图
+			tpl := cv2.AnalyseAnimal(k, false)
+			defer tpl.Close()
+
+			for _, vs := range tests3 {
+				for _, v := range vs {
+					func() {
+						// 测试图
+						test := cv2.AnalyseAnimal(v, false)
+						defer test.Close()
+
+						x := tpl.Clone()
+						defer x.Close()
+						percent, out := cv2.Check2(x, test)
+						defer out.Close()
+
+						sign := "√"
+						if strings.Split(k, "_")[0] == strings.Split(v, "_")[0] && percent < 0.1 {
 							sign = "<== x"
 						} else if percent < 0.1 {
 							sign = "x"
